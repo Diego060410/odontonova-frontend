@@ -251,7 +251,7 @@ export default function NuevaCita() {
       });
       const citaData = citaRes.data || citaRes;
       const token = localStorage.getItem("token");
-      await fetch("http://localhost:8080/api/pagos", {
+      await fetch("https://odontologobackend.onrender.com/api/pagos", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ monto: montoPago, metodoPago, estado: "PAGADO", idCita: citaData.idCita })
@@ -822,7 +822,7 @@ export default function NuevaCita() {
                   onApprove={async (data) => {
                     try {
                       setLoading(true);
-                      const response = await fetch(`http://localhost:8080/api/paypal/capture/${data.orderID}`, { method: "POST" });
+                      const response = await fetch(`https://odontologobackend.onrender.com/api/paypal/capture/${data.orderID}`, { method: "POST" });
                       if (!response.ok) throw new Error("Error en la captura de PayPal");
                       const result = await response.json();
                       
