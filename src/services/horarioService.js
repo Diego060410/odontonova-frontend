@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // URL corregida según tu @RequestMapping("/api/horarios-odontologos")
-const API = "http://localhost:8080/api/horarios-odontologos";
+const API = "https://odontologobackend.onrender.com/api/horarios-odontologos";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");

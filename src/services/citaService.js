@@ -2,7 +2,7 @@
 
   // Si ya tienes un archivo api.js configurado, podrías usar: import api from "./api";
   // Pero aquí usaremos la configuración completa para asegurar que no falte nada.
-  const API_URL = "http://localhost:8080/api/citas";
+  const API_URL = "https://odontologobackend.onrender.com/api/citas";
 
   /* ========================= 🔐 TOKEN & HEADERS ========================= */
 
