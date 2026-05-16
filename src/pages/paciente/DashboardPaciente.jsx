@@ -109,8 +109,8 @@ export default function DashboardPaciente() {
     return map[estado] || { bg: "#f8fafc", color: "#475569", border: "#e2e8f0", text: estado };
   };
 
-  /* =========================
-     🔥 CARGAR DATOS - SOLO PRÓXIMA CITA
+/* =========================
+     🔥 CARGAR DATOS - PARALELO ULTRA VELOZ
   ========================= */
 
   useEffect(() => {
@@ -120,85 +120,73 @@ export default function DashboardPaciente() {
         const idUsuario = localStorage.getItem("id_usuario");
         if (!idUsuario) throw new Error("No hay usuario logueado");
 
-        const userData = await getUsuarioById(idUsuario);
+        // ⚡ PASO 1: Lanzamos las peticiones core en paralelo (Mismo milisegundo)
+        const [userData, pacienteData, odontologosRes, consultoriosRes, sedesData] = await Promise.all([
+          getUsuarioById(idUsuario),
+          getPacienteByUsuario(idUsuario),
+          listarOdontologos(),
+          listarConsultorios(),
+          listarSedes()
+        ]);
+
         setUsuario(userData);
 
-        const paciente = await getPacienteByUsuario(idUsuario);
-        if (!paciente?.idPaciente) throw new Error("No existe paciente");
+        if (!pacienteData?.idPaciente) throw new Error("No existe paciente");
 
-        const citasData = await citaService.getMisCitas(paciente.idPaciente);
-        const odontologos = (await listarOdontologos())?.data || [];
-        const consultorios = (await listarConsultorios())?.data || [];
-        const sedes = await listarSedes();
-        const usuariosCache = {};
+        // ⚡ PASO 2: Obtenemos las citas del paciente ya teniendo su ID
+        const citasData = await citaService.getMisCitas(pacienteData.idPaciente);
 
-        const citasFinal = await Promise.all(
-          (citasData || []).map(async (c) => {
-            const odontologo = odontologos.find(
-              (o) => Number(o.idOdontologo) === Number(c.idOdontologo)
-            );
-            let usuarioOdontologo = null;
-            if (odontologo?.idUsuario) {
-              if (!usuariosCache[odontologo.idUsuario]) {
-                try {
-                  usuariosCache[odontologo.idUsuario] = await getUsuarioById(odontologo.idUsuario);
-                } catch { usuariosCache[odontologo.idUsuario] = null; }
-              }
-              usuarioOdontologo = usuariosCache[odontologo.idUsuario];
-            }
-            if (!usuarioOdontologo && c.odontologo?.usuario) {
-              usuarioOdontologo = c.odontologo.usuario;
-            }
-            const consultorio = consultorios.find(
-              (co) => Number(co.idConsultorio) === Number(c.idConsultorio)
-            );
-            const sede = sedes.find((s) => Number(s.idSede) === Number(c.idSede));
-            return {
-              ...c,
-              odontologo: odontologo ? { ...odontologo, usuario: usuarioOdontologo } : c.odontologo || null,
-              consultorio: consultorio || c.consultorio || null,
-              sede: sede || c.sede || null,
-            };
-          })
-        );
+        const odontologos = odontologosRes?.data || [];
+        const consultorios = consultoriosRes?.data || [];
+        const sedes = sedesData || [];
 
-        console.log("📊 Total de citas cargadas:", citasFinal.length);
+        // ⚡ PASO 3: Mapeo local inmediato en memoria (SIN llamadas HTTP internas lentas)
+        const citasFinal = (citasData || []).map((c) => {
+          const odontologo = odontologos.find(
+            (o) => Number(o.idOdontologo) === Number(c.idOdontologo)
+          );
+          
+          // Usamos la información del odontólogo que ya viene mapeada desde el backend o fallback
+          const usuarioOdontologo = odontologo?.usuario || c.odontologo?.usuario || null;
+
+          const consultorio = consultorios.find(
+            (co) => Number(co.idConsultorio) === Number(c.idConsultorio)
+          );
+          const sede = sedes.find((s) => Number(s.idSede) === Number(c.idSede));
+
+          return {
+            ...c,
+            odontologo: odontologo ? { ...odontologo, usuario: usuarioOdontologo } : c.odontologo || null,
+            consultorio: consultorio || c.consultorio || null,
+            sede: sede || c.sede || null,
+          };
+        });
+
+        console.log("📊 Total de citas procesadas localmente:", citasFinal.length);
         
-        // ✅ FILTRAR: Solo NO canceladas + FUTURAS O DE HOY (no pasadas)
+        // ✅ FILTRAR: Solo NO canceladas + FUTURAS O DE HOY
         const futuras = citasFinal.filter(c => {
           const estado = getEstado(c);
           const esFutura = esCitaFutura(c);
-          
-          console.log("Filtrando cita:", {
-            fecha: c.fecha,
-            hora: c.horaInicio,
-            estado: estado,
-            esFutura: esFutura,
-            seMuestra: estado !== "cancelada" && esFutura
-          });
-          
           return estado !== "cancelada" && esFutura;
         });
 
-        console.log("✅ Citas futuras encontradas:", futuras.length);
+        console.log("✅ Citas futuras listas:", futuras.length);
 
-        // ✅ ORDENAR: Por fecha/hora más cercana PRIMERO (ascendente)
+        // ✅ ORDENAR: Por fecha/hora más cercana PRIMERO
         futuras.sort((a, b) => {
           const timeA = parseFechaHoraLocal(a.fecha, a.horaInicio);
           const timeB = parseFechaHoraLocal(b.fecha, b.horaInicio);
-          
           if (timeA === null) return 1;
           if (timeB === null) return -1;
-          
           return timeA - timeB;
         });
 
-        // ✅ SOLO LA PRIMERA (la más próxima)
-        console.log("🎯 Próxima cita a mostrar:", futuras[0]);
+        // ✅ ASIGNAR PRÓXIMA CITA
         setProximaCita(futuras.length > 0 ? futuras[0] : null);
 
       } catch (err) {
-        console.error(err);
+        console.error("Error crítico cargando Dashboard:", err);
         setError("Error al cargar los datos del dashboard");
       } finally {
         setLoading(false);
