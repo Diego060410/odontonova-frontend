@@ -79,10 +79,8 @@ function App() {
         <Route path="/admin/especialidades" element={<PrivateRoute roleRequired="ADMIN"><Especialidades /></PrivateRoute>} />
         <Route path="/admin/crear-especialidad" element={<PrivateRoute roleRequired="ADMIN"><CrearEspecialidad /></PrivateRoute>} />
         <Route path="/admin/editar-especialidad/:id" element={<PrivateRoute roleRequired="ADMIN"><CrearEspecialidad /></PrivateRoute>} />
-        <Route path="/admin/crear-usuario" element={<CrearUsuario />} />
-        <Route path="/admin/perfil" element={<PrivateRoute roleRequired="ADMIN"><PerfilAdmin /></PrivateRoute>
-  }
-/>
+        <Route path="/admin/crear-usuario" element={<PrivateRoute roleRequired="ADMIN"><CrearUsuario /></PrivateRoute>} />
+        <Route path="/admin/perfil" element={<PrivateRoute roleRequired="ADMIN"><PerfilAdmin /></PrivateRoute>} />
         <Route path="/admin/crear-cita" element={<PrivateRoute roleRequired="ADMIN"><CrearCitaAdmin /></PrivateRoute>} />
         
 

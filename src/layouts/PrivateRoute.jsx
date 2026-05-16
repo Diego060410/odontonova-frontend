@@ -6,13 +6,15 @@ export default function PrivateRoute({ children, roleRequired }) {
   const rol = localStorage.getItem("rol");
 
   if (!token) {
-    return <Navigate to="/" />;
+    return <Navigate to="/" replace />;
   }
 
-  if (roleRequired && rol !== roleRequired) {
-    return <Navigate to="/" />;
+  // quitar ROLE_
+  const rolLimpio = rol?.replace("ROLE_", "");
+
+  if (roleRequired && rolLimpio !== roleRequired) {
+    return <Navigate to="/" replace />;
   }
 
   return children;
-
 }
