@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: "https://odontologobackend.onrender.com/api",
   timeout: 10000, // ⏱ evita requests colgadas
   headers: {
     "Content-Type": "application/json",
